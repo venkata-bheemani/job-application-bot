@@ -1,0 +1,29 @@
+name: Auto Job Apply Bot
+
+on:
+  schedule:
+    - cron: '0 9 * * *'  # Runs every day at 9 AM EST (Adjust as needed)
+  workflow_dispatch:
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Set Up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+
+      - name: Install Dependencies
+        run: |
+          pip install selenium pandas smtplib requests webdriver-manager python-docx
+
+      - name: Run Job Application Bot
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: python job_application_bot.py

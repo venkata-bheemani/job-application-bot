@@ -86,5 +86,5 @@ def send_updated_resume_via_email(updated_resume_text, company_name):
         server.sendmail(GMAIL_USER, RECIPIENT_EMAIL, message)
 
 # Execute automation functions
-send_follow_up_emails()
+# send_follow_up_emails()
 print("✅ Enhancements completed: AI-updated resumes with personal details preserved, real-time job filtering, duplicate application prevention, and follow-ups!")

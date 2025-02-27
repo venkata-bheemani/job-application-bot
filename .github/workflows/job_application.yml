@@ -31,7 +31,7 @@ jobs:
         run: python job_application_bot.py
 
       - name: Upload Job Applications CSV to GitHub
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
          name: applied_jobs
          path: applied_jobs.csv

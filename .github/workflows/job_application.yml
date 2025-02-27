@@ -2,7 +2,7 @@ name: Auto Job Apply Bot
 
 on:
   schedule:
-    - cron: '0 9 * * *'  # Runs every day at 9 AM EST (Adjust as needed)
+    - cron: '0 9 * * *'  # Runs every day at 9 AM UTC (Adjust as needed)
   workflow_dispatch:
 
 jobs:

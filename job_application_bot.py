@@ -16,22 +16,13 @@ chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("--disable-dev-shm-usage")
 
 # Define job search parameters
-job_titles = [
-    "Java Developer", "Junior Java Developer", "Java Frontend Developer",
-    "Java Backend Developer", "Full Stack Java Developer", "Senior Java Developer",
-    "Java Software Engineer", "Software Engineer", "Senior Software Engineer",
-    "Software Developer", "Angular Developer", "React Developer",
-    "Node Developer", "JavaScript Developer"
-]
-locations = ["Remote", "Hybrid", "USA"]
+job_titles = ["Java Developer"]
+locations = ["Remote", "Hybrid", "Onsite", "USA"]
 job_types = ["Full-time", "Contract"]
 
-# Job search platforms
+# Job search platform (Only Dice)
 job_platforms = {
-    "Indeed": "https://www.indeed.com/",
-    "LinkedIn": "https://www.linkedin.com/jobs/",
-    "Dice": "https://www.dice.com/jobs",
-    "Glassdoor": "https://www.glassdoor.com/Job"
+    "Dice": "https://www.dice.com/jobs"
 }
 
 # Initialize WebDriver
@@ -49,18 +40,9 @@ def search_jobs():
                 wait = WebDriverWait(driver, 20)
 
                 try:
-                    if platform == "Indeed":
-                        search_box = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input[aria-label='What']")))
-                        location_box = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input[aria-label='Where']")))
-                    elif platform == "LinkedIn":
-                        search_box = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input.jobs-search-box__text-input")))
-                        location_box = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input.jobs-search-box__text-input[aria-label='City, state, or zip code']")))
-                    elif platform == "Dice":
+                    if platform == "Dice":
                         search_box = wait.until(EC.presence_of_element_located((By.ID, "typeaheadInput")))
                         location_box = wait.until(EC.presence_of_element_located((By.ID, "google-location-search")))
-                    elif platform == "Glassdoor":
-                        search_box = wait.until(EC.presence_of_element_located((By.ID, "KeywordSearch")))
-                        location_box = wait.until(EC.presence_of_element_located((By.ID, "LocationSearch")))
                     else:
                         continue
 
@@ -70,17 +52,8 @@ def search_jobs():
                     time.sleep(5)  # Wait for results to load
 
                     try:
-                        wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".job_seen_beacon, .job-card-container, .card, .jobListing")))
-                        if platform == "Indeed":
-                            jobs = driver.find_elements(By.CSS_SELECTOR, ".job_seen_beacon")
-                        elif platform == "LinkedIn":
-                            jobs = driver.find_elements(By.CSS_SELECTOR, ".job-card-container")
-                        elif platform == "Dice":
-                            jobs = driver.find_elements(By.CSS_SELECTOR, ".card")
-                        elif platform == "Glassdoor":
-                            jobs = driver.find_elements(By.CSS_SELECTOR, ".jobListing")
-                        else:
-                            jobs = []
+                        wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".card")))
+                        jobs = driver.find_elements(By.CSS_SELECTOR, ".card")
                     except Exception as e:
                         print(f"⚠ No jobs found on {platform}. The selector might need updating: {e}")
                         jobs = []

@@ -3,7 +3,15 @@ import requests
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from webdriver_manager.chrome import ChromeDriverManager
 import time
+
+chrome_options = Options()
+chrome_options.add_argument("--headless")  # Run Chrome in headless mode
+chrome_options.add_argument("--no-sandbox")
+chrome_options.add_argument("--disable-dev-shm-usage")
 
 # Define job search parameters
 job_titles = [
@@ -17,7 +25,8 @@ locations = ["Remote", "Hybrid", "USA"]
 job_types = ["Full-time", "Contract"]
 
 # Initialize WebDriver (Make sure you have ChromeDriver installed)
-driver = webdriver.Chrome()
+
+driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
 
 def search_jobs():
     job_data = []

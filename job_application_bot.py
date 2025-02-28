@@ -47,7 +47,10 @@ def search_jobs():
                 search_box.send_keys(Keys.RETURN)
                 time.sleep(5)  # Wait for results to load
 
-                jobs = driver.find_elements(By.CLASS_NAME, "result")
+                # Wait until job listings appear
+                wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".job_seen_beacon")))
+                jobs = driver.find_elements(By.CSS_SELECTOR, ".job_seen_beacon")
+                
                 for job in jobs:
                     try:
                         job_title = job.find_element(By.CLASS_NAME, "jobTitle").text

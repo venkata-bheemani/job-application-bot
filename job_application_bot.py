@@ -26,35 +26,39 @@ job_titles = [
 locations = ["Remote", "Hybrid", "USA"]
 job_types = ["Full-time", "Contract"]
 
-# Initialize WebDriver (Make sure you have ChromeDriver installed)
-
+# Initialize WebDriver
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
 
 def search_jobs():
     job_data = []
     for title in job_titles:
         for location in locations:
-            driver.get("https://www.indeed.com/")  # Example: Start from Indeed
+            driver.get("https://www.indeed.com/")
+            time.sleep(5)  # Ensure page loads
 
             # Wait until the elements are visible
-            wait = WebDriverWait(driver, 10)  # Waits up to 10 seconds
+            wait = WebDriverWait(driver, 20)
 
-            search_box = wait.until(EC.presence_of_element_located((By.NAME, "q")))
-            location_box = wait.until(EC.presence_of_element_located((By.NAME, "l")))
-            search_box.send_keys(title)
-            location_box.send_keys(location)
-            search_box.send_keys(Keys.RETURN)
-            time.sleep(5)  # Wait for results to load
+            try:
+                search_box = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input[aria-label='What']")))
+                location_box = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input[aria-label='Where']")))
+                search_box.send_keys(title)
+                location_box.send_keys(location)
+                search_box.send_keys(Keys.RETURN)
+                time.sleep(5)  # Wait for results to load
 
-            jobs = driver.find_elements(By.CLASS_NAME, "result")  # Adjust selector as needed
-            for job in jobs:
-                try:
-                    job_title = job.find_element(By.CLASS_NAME, "jobTitle").text
-                    company = job.find_element(By.CLASS_NAME, "companyName").text
-                    job_link = job.find_element(By.TAG_NAME, "a").get_attribute("href")
-                    job_data.append({"Company": company, "Job Title": job_title, "Job Link": job_link})
-                except:
-                    continue
+                jobs = driver.find_elements(By.CLASS_NAME, "result")
+                for job in jobs:
+                    try:
+                        job_title = job.find_element(By.CLASS_NAME, "jobTitle").text
+                        company = job.find_element(By.CLASS_NAME, "companyName").text
+                        job_link = job.find_element(By.TAG_NAME, "a").get_attribute("href")
+                        job_data.append({"Company": company, "Job Title": job_title, "Job Link": job_link})
+                    except:
+                        continue
+            except Exception as e:
+                print(f"Error finding job search fields: {e}")
+                continue
     return job_data
 
 # Generate auto cover letter
@@ -77,7 +81,6 @@ def apply_to_jobs():
     jobs = search_jobs()
     for job in jobs:
         cover_letter = generate_cover_letter(job["Job Title"], job["Company"])
-        # Here, we would automate application steps for each platform
         applied_jobs.append({"Company": job["Company"], "Job Title": job["Job Title"], "Job Link": job["Job Link"], "Cover Letter": cover_letter})
     return applied_jobs
 

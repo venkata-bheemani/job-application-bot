@@ -26,65 +26,75 @@ job_titles = [
 locations = ["Remote", "Hybrid", "USA"]
 job_types = ["Full-time", "Contract"]
 
+# Job search platforms
+job_platforms = {
+    "Indeed": "https://www.indeed.com/",
+    "LinkedIn": "https://www.linkedin.com/jobs/",
+    "Dice": "https://www.dice.com/jobs",
+    "Glassdoor": "https://www.glassdoor.com/Job"
+}
+
 # Initialize WebDriver
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
 
 def search_jobs():
     job_data = []
-    for title in job_titles:
-        for location in locations:
-            driver.get("https://www.indeed.com/")
-            time.sleep(5)  # Ensure page loads
+    for platform, url in job_platforms.items():
+        for title in job_titles:
+            for location in locations:
+                driver.get(url)
+                time.sleep(5)  # Ensure page loads
 
-            # Wait until the elements are visible
-            wait = WebDriverWait(driver, 20)
+                # Wait until the elements are visible
+                wait = WebDriverWait(driver, 20)
 
-            try:
-                search_box = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input[aria-label='What']")))
-                location_box = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input[aria-label='Where']")))
-                search_box.send_keys(title)
-                location_box.send_keys(location)
-                search_box.send_keys(Keys.RETURN)
-                time.sleep(5)  # Wait for results to load
-
-                # Wait until job listings appear
-                wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".job_seen_beacon")))
-                jobs = driver.find_elements(By.CSS_SELECTOR, ".job_seen_beacon")
-                
-                for job in jobs:
-                    try:
-                        job_title = job.find_element(By.CLASS_NAME, "jobTitle").text
-                        company = job.find_element(By.CLASS_NAME, "companyName").text
-                        job_link = job.find_element(By.TAG_NAME, "a").get_attribute("href")
-                        job_data.append({"Company": company, "Job Title": job_title, "Job Link": job_link})
-                    except:
+                try:
+                    if platform == "Indeed":
+                        search_box = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input[aria-label='What']")))
+                        location_box = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input[aria-label='Where']")))
+                    elif platform == "LinkedIn":
+                        search_box = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input.jobs-search-box__text-input")))
+                        location_box = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input.jobs-search-box__text-input[aria-label='City, state, or zip code']")))
+                    elif platform == "Dice":
+                        search_box = wait.until(EC.presence_of_element_located((By.ID, "typeaheadInput")))
+                        location_box = wait.until(EC.presence_of_element_located((By.ID, "google-location-search")))
+                    elif platform == "Glassdoor":
+                        search_box = wait.until(EC.presence_of_element_located((By.ID, "KeywordSearch")))
+                        location_box = wait.until(EC.presence_of_element_located((By.ID, "LocationSearch")))
+                    else:
                         continue
-            except Exception as e:
-                print(f"Error finding job search fields: {e}")
-                continue
+
+                    search_box.send_keys(title)
+                    location_box.send_keys(location)
+                    search_box.send_keys(Keys.RETURN)
+                    time.sleep(5)  # Wait for results to load
+
+                    wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".job_seen_beacon")))
+                    jobs = driver.find_elements(By.CSS_SELECTOR, ".job_seen_beacon")
+
+                    for job in jobs:
+                        try:
+                            job_title = job.find_element(By.CLASS_NAME, "jobTitle").text
+                            company = job.find_element(By.CLASS_NAME, "companyName").text
+                            job_link_element = job.find_element(By.TAG_NAME, "a")
+                            job_link = job_link_element.get_attribute("href") if job_link_element else "No Link"
+
+                            print(f"✔ Found job: {job_title} at {company} on {platform}")
+                            job_data.append({"Platform": platform, "Company": company, "Job Title": job_title, "Job Link": job_link})
+                        except Exception as e:
+                            print(f"⚠ Error extracting job details: {e}")
+                except Exception as e:
+                    print(f"Error finding job search fields on {platform}: {e}")
+                    continue
     return job_data
-
-# Generate auto cover letter
-def generate_cover_letter(job_title, company):
-    cover_letter = f"""
-    Dear Hiring Manager at {company},
-
-    I am excited to apply for the {job_title} position at {company}. With 5 years of experience in Java development and UI technologies, I am confident in my ability to contribute effectively to your team.
-
-    I look forward to the opportunity to discuss how my skills align with your needs.
-
-    Best regards,
-    Venkata Vamsi Krishna
-    """
-    return cover_letter
 
 # Apply to jobs
 def apply_to_jobs():
     applied_jobs = []
     jobs = search_jobs()
     for job in jobs:
-        cover_letter = generate_cover_letter(job["Job Title"], job["Company"])
-        applied_jobs.append({"Company": job["Company"], "Job Title": job["Job Title"], "Job Link": job["Job Link"], "Cover Letter": cover_letter})
+        print(f"Applying for: {job['Job Title']} at {job['Company']} ({job['Platform']})")
+        applied_jobs.append(job)
     return applied_jobs
 
 # Save applied jobs to CSV

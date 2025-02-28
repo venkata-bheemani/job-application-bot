@@ -85,6 +85,9 @@ def search_jobs():
                         print(f"⚠ No jobs found on {platform}. The selector might need updating: {e}")
                         jobs = []
 
+                    if not jobs:
+                        print(f"⚠ No job listings found on {platform} for {title} in {location}.")
+
                     for job in jobs:
                         try:
                             job_title = job.find_element(By.CLASS_NAME, "jobTitle").text
@@ -105,6 +108,8 @@ def search_jobs():
 def apply_to_jobs():
     applied_jobs = []
     jobs = search_jobs()
+    if not jobs:
+        print("⚠ No jobs found. Please check if job search fields and selectors are correct.")
     for job in jobs:
         print(f"Applying for: {job['Job Title']} at {job['Company']} ({job['Platform']})")
         applied_jobs.append(job)
@@ -113,8 +118,11 @@ def apply_to_jobs():
 # Save applied jobs to CSV
 def save_jobs_to_csv():
     applied_jobs = apply_to_jobs()
+    if not applied_jobs:
+        print("⚠ No jobs were applied to. Ensure job listings are being extracted correctly.")
     df = pd.DataFrame(applied_jobs)
     df.to_csv("applied_jobs.csv", index=False)
+    print(f"✅ Job applications saved to applied_jobs.csv ({len(applied_jobs)} jobs applied).")
 
 # Run the bot
 save_jobs_to_csv()

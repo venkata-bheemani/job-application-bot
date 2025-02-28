@@ -42,6 +42,11 @@ OPENAI_API_KEY = "your_openai_api_key"
 OPENAI_URL = "https://api.openai.com/v1/chat/completions"
 HEADERS = {"Authorization": f"Bearer {OPENAI_API_KEY}", "Content-Type": "application/json"}
 
+data = [
+    {"Company": "Company A", "Job Title": "Software Engineer", "Job Link": "https://example.com"},
+    {"Company": "Company B", "Job Title": "Java Developer", "Job Link": "https://example.com"}
+]
+
 def extract_personal_details():
     """ Extracts personal details (name, phone, email, education, work experience) from the user's resume. """
     doc = Document(USER_RESUME_PATH)
@@ -84,6 +89,8 @@ def send_updated_resume_via_email(updated_resume_text, company_name):
         server.starttls()
         server.login(GMAIL_USER, GMAIL_PASSWORD)
         server.sendmail(GMAIL_USER, RECIPIENT_EMAIL, message)
+df = pd.DataFrame(data)
+df.to_csv("applied_jobs.csv", index=False)
 
 # Execute automation functions
 # send_follow_up_emails()

@@ -1,97 +1,78 @@
-import time
-import random
-import requests
 import pandas as pd
-import smtplib
+import requests
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
-from docx import Document
+import time
 
-# Define Job Search Keywords
-JOB_TITLES = [
-    "Java Developer", "Junior Java Developer", "Java Frontend Developer", "Java Backend Developer",
-    "Full Stack Java Developer", "Senior Java Developer", "Java Software Engineer", "Software Engineer",
-    "Senior Software Engineer", "Software Developer", "SE Software Developer", "Angular Developer",
-    "React Developer", "Node Developer", "JavaScript Developer"
+# Define job search parameters
+job_titles = [
+    "Java Developer", "Junior Java Developer", "Java Frontend Developer",
+    "Java Backend Developer", "Full Stack Java Developer", "Senior Java Developer",
+    "Java Software Engineer", "Software Engineer", "Senior Software Engineer",
+    "Software Developer", "Angular Developer", "React Developer",
+    "Node Developer", "JavaScript Developer"
 ]
-LOCATION = "Remote OR USA"
-EXCLUDED_COMPANIES = ["Vanguard", "Verizon", "Capital One"]
-JOB_SITES = [
-    "https://www.linkedin.com/jobs/search/?keywords=",
-    "https://www.indeed.com/jobs?q=",
-    "https://www.dice.com/jobs?q=",
-    "https://www.jobrecruiter.com/jobs?q=",
-    "https://www.glassdoor.com/Job/jobs.htm?sc.keyword="
-]
+locations = ["Remote", "Hybrid", "USA"]
+job_types = ["Full-time", "Contract"]
 
-# Email Configuration
-GMAIL_USER = "your_email@gmail.com"
-GMAIL_PASSWORD = "your_app_password"
-RECIPIENT_EMAIL = "vamsi.bheemani.hw@gmail.com"
+# Initialize WebDriver (Make sure you have ChromeDriver installed)
+driver = webdriver.Chrome()
 
-# Resume & Cover Letter Storage
-RESUME_FOLDER = "./resumes/"
-COVER_LETTER_FOLDER = "./cover_letters/"
-USER_RESUME_PATH = "./Venkata_Vamsi_Krishna.docx"  # Path to the original resume
+def search_jobs():
+    job_data = []
+    for title in job_titles:
+        for location in locations:
+            driver.get("https://www.indeed.com/")  # Example: Start from Indeed
+            search_box = driver.find_element(By.ID, "text-input-what")
+            location_box = driver.find_element(By.ID, "text-input-where")
+            search_box.send_keys(title)
+            location_box.send_keys(location)
+            search_box.send_keys(Keys.RETURN)
+            time.sleep(5)  # Wait for results to load
 
-# OpenAI API Configuration
-OPENAI_API_KEY = "your_openai_api_key"
-OPENAI_URL = "https://api.openai.com/v1/chat/completions"
-HEADERS = {"Authorization": f"Bearer {OPENAI_API_KEY}", "Content-Type": "application/json"}
+            jobs = driver.find_elements(By.CLASS_NAME, "result")  # Adjust selector as needed
+            for job in jobs:
+                try:
+                    job_title = job.find_element(By.CLASS_NAME, "jobTitle").text
+                    company = job.find_element(By.CLASS_NAME, "companyName").text
+                    job_link = job.find_element(By.TAG_NAME, "a").get_attribute("href")
+                    job_data.append({"Company": company, "Job Title": job_title, "Job Link": job_link})
+                except:
+                    continue
+    return job_data
 
-data = [
-    {"Company": "Company A", "Job Title": "Software Engineer", "Job Link": "https://example.com"},
-    {"Company": "Company B", "Job Title": "Java Developer", "Job Link": "https://example.com"}
-]
+# Generate auto cover letter
+def generate_cover_letter(job_title, company):
+    cover_letter = f"""
+    Dear Hiring Manager at {company},
 
-def extract_personal_details():
-    """ Extracts personal details (name, phone, email, education, work experience) from the user's resume. """
-    doc = Document(USER_RESUME_PATH)
-    resume_text = "\n".join([para.text for para in doc.paragraphs])
-    return resume_text
+    I am excited to apply for the {job_title} position at {company}. With 5 years of experience in Java development and UI technologies, I am confident in my ability to contribute effectively to your team.
 
-def generate_updated_resume(job_description):
-    """ Uses OpenAI to update the resume while keeping personal details intact. """
-    personal_details = extract_personal_details()
-    prompt = f"""
-    Modify my resume to align with this job description:
-    {job_description}
-    Keep my name, phone number, email, work experience, and education the same.
+    I look forward to the opportunity to discuss how my skills align with your needs.
+
+    Best regards,
+    Venkata Vamsi Krishna
     """
-    response = requests.post(OPENAI_URL, headers=HEADERS, json={"model": "gpt-4", "messages": [{"role": "system", "content": "Generate an updated resume."}, {"role": "user", "content": prompt}]})
-    updated_resume = response.json().get("choices")[0]["message"]["content"]
-    return f"{personal_details}\n\n{updated_resume}"
+    return cover_letter
 
-def filter_real_time_jobs(jobs):
-    """ Filters out fake job postings by checking job descriptions and sources. """
-    return [job for job in jobs if "contract" in job.lower() or "full-time" in job.lower()]
-
-def prevent_duplicate_applications(job_list):
-    """ Ensures that duplicate applications are not submitted. """
-    applied_jobs = pd.read_csv("job_applications.csv") if "job_applications.csv" in job_list else pd.DataFrame()
+# Apply to jobs
+def apply_to_jobs():
+    applied_jobs = []
+    jobs = search_jobs()
+    for job in jobs:
+        cover_letter = generate_cover_letter(job["Job Title"], job["Company"])
+        # Here, we would automate application steps for each platform
+        applied_jobs.append({"Company": job["Company"], "Job Title": job["Job Title"], "Job Link": job["Job Link"], "Cover Letter": cover_letter})
     return applied_jobs
 
-def send_follow_up_emails():
-    """ Sends follow-up emails to recruiters after applications. """
-    message = "Subject: Follow-Up on Job Application\n\nHello, I recently applied for the job and wanted to follow up on my application. Looking forward to discussing further."
-    with smtplib.SMTP("smtp.gmail.com", 587) as server:
-        server.starttls()
-        server.login(GMAIL_USER, GMAIL_PASSWORD)
-        server.sendmail(GMAIL_USER, RECIPIENT_EMAIL, message)
+# Save applied jobs to CSV
+def save_jobs_to_csv():
+    applied_jobs = apply_to_jobs()
+    df = pd.DataFrame(applied_jobs)
+    df.to_csv("applied_jobs.csv", index=False)
 
-def send_updated_resume_via_email(updated_resume_text, company_name):
-    """ Sends the AI-modified resume to the user via email. """
-    message = f"Subject: Updated Resume for {company_name}\n\nHere is the updated resume:\n\n{updated_resume_text}"
-    with smtplib.SMTP("smtp.gmail.com", 587) as server:
-        server.starttls()
-        server.login(GMAIL_USER, GMAIL_PASSWORD)
-        server.sendmail(GMAIL_USER, RECIPIENT_EMAIL, message)
-df = pd.DataFrame(data)
-df.to_csv("applied_jobs.csv", index=False)
+# Run the bot
+save_jobs_to_csv()
 
-# Execute automation functions
-# send_follow_up_emails()
-print("✅ Enhancements completed: AI-updated resumes with personal details preserved, real-time job filtering, duplicate application prevention, and follow-ups!")
+driver.quit()

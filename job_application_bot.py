@@ -6,6 +6,8 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 import time
 
 chrome_options = Options()
@@ -33,8 +35,12 @@ def search_jobs():
     for title in job_titles:
         for location in locations:
             driver.get("https://www.indeed.com/")  # Example: Start from Indeed
-            search_box = driver.find_element(By.ID, "text-input-what")
-            location_box = driver.find_element(By.ID, "text-input-where")
+
+            # Wait until the elements are visible
+            wait = WebDriverWait(driver, 10)  # Waits up to 10 seconds
+
+            search_box = wait.until(EC.presence_of_element_located((By.NAME, "q")))
+            location_box = wait.until(EC.presence_of_element_located((By.NAME, "l")))
             search_box.send_keys(title)
             location_box.send_keys(location)
             search_box.send_keys(Keys.RETURN)

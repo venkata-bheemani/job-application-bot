@@ -69,8 +69,21 @@ def search_jobs():
                     search_box.send_keys(Keys.RETURN)
                     time.sleep(5)  # Wait for results to load
 
-                    wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".job_seen_beacon")))
-                    jobs = driver.find_elements(By.CSS_SELECTOR, ".job_seen_beacon")
+                    try:
+                        wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".job_seen_beacon, .job-card-container, .card, .jobListing")))
+                        if platform == "Indeed":
+                            jobs = driver.find_elements(By.CSS_SELECTOR, ".job_seen_beacon")
+                        elif platform == "LinkedIn":
+                            jobs = driver.find_elements(By.CSS_SELECTOR, ".job-card-container")
+                        elif platform == "Dice":
+                            jobs = driver.find_elements(By.CSS_SELECTOR, ".card")
+                        elif platform == "Glassdoor":
+                            jobs = driver.find_elements(By.CSS_SELECTOR, ".jobListing")
+                        else:
+                            jobs = []
+                    except Exception as e:
+                        print(f"⚠ No jobs found on {platform}. The selector might need updating: {e}")
+                        jobs = []
 
                     for job in jobs:
                         try:
@@ -82,7 +95,7 @@ def search_jobs():
                             print(f"✔ Found job: {job_title} at {company} on {platform}")
                             job_data.append({"Platform": platform, "Company": company, "Job Title": job_title, "Job Link": job_link})
                         except Exception as e:
-                            print(f"⚠ Error extracting job details: {e}")
+                            print(f"⚠ Error extracting job details on {platform}: {e}")
                 except Exception as e:
                     print(f"Error finding job search fields on {platform}: {e}")
                     continue

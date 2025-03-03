@@ -67,7 +67,8 @@ def search_and_apply_jobs():
                 search_box.send_keys(Keys.RETURN)
                 time.sleep(5)  # Wait for results
                 
-                job_listings = driver.find_elements(By.CSS_SELECTOR, ".card")
+                job_listings = WebDriverWait(driver, 10).until(
+                    EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".card")))
                 if not job_listings:
                     print(f"⚠ No jobs found for {title} in {location}")
                     continue
@@ -84,15 +85,15 @@ def search_and_apply_jobs():
                         driver.get(job_link)
                         time.sleep(5)
                         try:
-                            apply_button = WebDriverWait(driver, 5).until(
-                                EC.presence_of_element_located((By.XPATH, "//button[contains(text(), 'Apply Now')]")
+                            apply_button = WebDriverWait(driver, 10).until(
+                                EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Apply Now')]")
                             ))
                             apply_button.click()
                             time.sleep(3)
                             print(f"🚀 Successfully applied to {job_title} at {company}")
                             applied_jobs.append({"Company": company, "Job Title": job_title, "Job Link": job_link})
-                        except:
-                            print(f"⚠ Could not apply to {job_title} at {company}")
+                        except Exception as e:
+                            print(f"⚠ Could not apply to {job_title} at {company}: {e}")
                     except Exception as e:
                         print(f"⚠ Error extracting job details: {e}")
             except Exception as e:

@@ -40,6 +40,7 @@ logging.info("Initializing WebDriver")
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
 
 def login_to_dice():
+    """Logs into Dice using provided credentials."""
     logging.info("Attempting to log in to Dice")
     driver.get(DICE_LOGIN_URL)
     time.sleep(5)  # Wait for page to load
@@ -54,11 +55,13 @@ def login_to_dice():
         password_field.send_keys(DICE_PASSWORD)
         login_button.click()
         time.sleep(7)
+        
         logging.info("✅ Successfully logged into Dice!")
     except Exception as e:
         logging.error(f"❌ Login failed: {e}")
 
 def search_and_apply_jobs():
+    """Searches and applies for Java Developer jobs on Dice."""
     applied_jobs = []
     logging.info("Starting job search on Dice")
     driver.get(DICE_SEARCH_URL)
@@ -81,6 +84,7 @@ def search_and_apply_jobs():
                 
                 job_listings = WebDriverWait(driver, 15).until(
                     EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".card")))
+                
                 if not job_listings:
                     logging.warning(f"⚠ No jobs found for {title} in {location}")
                     continue
@@ -98,10 +102,11 @@ def search_and_apply_jobs():
                         time.sleep(5)
                         try:
                             apply_button = WebDriverWait(driver, 10).until(
-                                EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Apply Now')]")
-                            ))
+                                EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Apply Now')]"))
+                            )
                             apply_button.click()
                             time.sleep(3)
+                            
                             logging.info(f"🚀 Successfully applied to {job_title} at {company}")
                             applied_jobs.append({"Company": company, "Job Title": job_title, "Job Link": job_link})
                         except Exception as e:
@@ -113,6 +118,7 @@ def search_and_apply_jobs():
     return applied_jobs
 
 def save_jobs_to_csv():
+    """Saves applied jobs to a CSV file."""
     applied_jobs = search_and_apply_jobs()
     df = pd.DataFrame(applied_jobs)
     df.to_csv("applied_jobs.csv", index=False)

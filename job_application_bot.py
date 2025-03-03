@@ -35,7 +35,7 @@ def login_to_dice():
     time.sleep(5)  # Wait for page to load
     
     try:
-        email_field = WebDriverWait(driver, 10).until(
+        email_field = WebDriverWait(driver, 15).until(
             EC.presence_of_element_located((By.ID, "email")))
         password_field = driver.find_element(By.ID, "password")
         login_button = driver.find_element(By.XPATH, "//button[contains(text(), 'Login')]")
@@ -43,7 +43,7 @@ def login_to_dice():
         email_field.send_keys(DICE_USERNAME)
         password_field.send_keys(DICE_PASSWORD)
         login_button.click()
-        time.sleep(5)
+        time.sleep(7)
         print("✅ Successfully logged into Dice!")
     except Exception as e:
         print(f"❌ Login failed: {e}")
@@ -56,7 +56,7 @@ def search_and_apply_jobs():
     for title in job_titles:
         for location in locations:
             try:
-                search_box = WebDriverWait(driver, 10).until(
+                search_box = WebDriverWait(driver, 15).until(
                     EC.presence_of_element_located((By.ID, "typeaheadInput")))
                 location_box = driver.find_element(By.ID, "google-location-search")
                 
@@ -65,9 +65,9 @@ def search_and_apply_jobs():
                 search_box.send_keys(title)
                 location_box.send_keys(location)
                 search_box.send_keys(Keys.RETURN)
-                time.sleep(5)  # Wait for results
+                time.sleep(7)  # Wait for results
                 
-                job_listings = WebDriverWait(driver, 10).until(
+                job_listings = WebDriverWait(driver, 15).until(
                     EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".card")))
                 if not job_listings:
                     print(f"⚠ No jobs found for {title} in {location}")

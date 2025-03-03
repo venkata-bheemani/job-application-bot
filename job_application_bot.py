@@ -1,5 +1,5 @@
 import pandas as pd
-import requests
+import time
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -8,7 +8,11 @@ from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-import time
+import os
+
+# Load credentials from GitHub Secrets
+DICE_USERNAME = os.getenv("DICE_USERNAME")
+DICE_PASSWORD = os.getenv("DICE_PASSWORD")
 
 chrome_options = Options()
 chrome_options.add_argument("--headless")  # Run Chrome in headless mode
@@ -18,86 +22,91 @@ chrome_options.add_argument("--disable-dev-shm-usage")
 # Define job search parameters
 job_titles = ["Java Developer"]
 locations = ["Remote", "Hybrid", "Onsite", "USA"]
-job_types = ["Full-time", "Contract"]
 
-# Job search platform (Only Dice)
-job_platforms = {
-    "Dice": "https://www.dice.com/jobs"
-}
+# Dice Login URL
+DICE_LOGIN_URL = "https://www.dice.com/dashboard/login"
+DICE_SEARCH_URL = "https://www.dice.com/jobs"
 
 # Initialize WebDriver
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
 
-def search_jobs():
-    job_data = []
-    for platform, url in job_platforms.items():
-        for title in job_titles:
-            for location in locations:
-                driver.get(url)
-                time.sleep(5)  # Ensure page loads
+def login_to_dice():
+    driver.get(DICE_LOGIN_URL)
+    time.sleep(5)  # Wait for page to load
+    
+    try:
+        email_field = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.ID, "email")))
+        password_field = driver.find_element(By.ID, "password")
+        login_button = driver.find_element(By.XPATH, "//button[contains(text(), 'Login')]")
+        
+        email_field.send_keys(DICE_USERNAME)
+        password_field.send_keys(DICE_PASSWORD)
+        login_button.click()
+        time.sleep(5)
+        print("✅ Successfully logged into Dice!")
+    except Exception as e:
+        print(f"❌ Login failed: {e}")
 
-                # Wait until the elements are visible
-                wait = WebDriverWait(driver, 20)
-
-                try:
-                    if platform == "Dice":
-                        search_box = wait.until(EC.presence_of_element_located((By.ID, "typeaheadInput")))
-                        location_box = wait.until(EC.presence_of_element_located((By.ID, "google-location-search")))
-                    else:
-                        continue
-
-                    search_box.send_keys(title)
-                    location_box.send_keys(location)
-                    search_box.send_keys(Keys.RETURN)
-                    time.sleep(5)  # Wait for results to load
-
-                    try:
-                        wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".card")))
-                        jobs = driver.find_elements(By.CSS_SELECTOR, ".card")
-                    except Exception as e:
-                        print(f"⚠ No jobs found on {platform}. The selector might need updating: {e}")
-                        jobs = []
-
-                    if not jobs:
-                        print(f"⚠ No job listings found on {platform} for {title} in {location}.")
-
-                    for job in jobs:
-                        try:
-                            job_title = job.find_element(By.CLASS_NAME, "jobTitle").text
-                            company = job.find_element(By.CLASS_NAME, "companyName").text
-                            job_link_element = job.find_element(By.TAG_NAME, "a")
-                            job_link = job_link_element.get_attribute("href") if job_link_element else "No Link"
-
-                            print(f"✔ Found job: {job_title} at {company} on {platform}")
-                            job_data.append({"Platform": platform, "Company": company, "Job Title": job_title, "Job Link": job_link})
-                        except Exception as e:
-                            print(f"⚠ Error extracting job details on {platform}: {e}")
-                except Exception as e:
-                    print(f"Error finding job search fields on {platform}: {e}")
-                    continue
-    return job_data
-
-# Apply to jobs
-def apply_to_jobs():
+def search_and_apply_jobs():
     applied_jobs = []
-    jobs = search_jobs()
-    if not jobs:
-        print("⚠ No jobs found. Please check if job search fields and selectors are correct.")
-    for job in jobs:
-        print(f"Applying for: {job['Job Title']} at {job['Company']} ({job['Platform']})")
-        applied_jobs.append(job)
+    driver.get(DICE_SEARCH_URL)
+    time.sleep(5)  # Ensure page loads
+
+    for title in job_titles:
+        for location in locations:
+            try:
+                search_box = WebDriverWait(driver, 10).until(
+                    EC.presence_of_element_located((By.ID, "typeaheadInput")))
+                location_box = driver.find_element(By.ID, "google-location-search")
+                
+                search_box.clear()
+                location_box.clear()
+                search_box.send_keys(title)
+                location_box.send_keys(location)
+                search_box.send_keys(Keys.RETURN)
+                time.sleep(5)  # Wait for results
+                
+                job_listings = driver.find_elements(By.CSS_SELECTOR, ".card")
+                if not job_listings:
+                    print(f"⚠ No jobs found for {title} in {location}")
+                    continue
+                
+                for job in job_listings[:5]:  # Limit applications per search
+                    try:
+                        job_title = job.find_element(By.CLASS_NAME, "card-title-link").text
+                        company = job.find_element(By.CLASS_NAME, "card-company").text
+                        job_link = job.find_element(By.TAG_NAME, "a").get_attribute("href")
+                        
+                        print(f"✔ Found job: {job_title} at {company}")
+                        
+                        # Apply to job
+                        driver.get(job_link)
+                        time.sleep(5)
+                        try:
+                            apply_button = WebDriverWait(driver, 5).until(
+                                EC.presence_of_element_located((By.XPATH, "//button[contains(text(), 'Apply Now')]")
+                            ))
+                            apply_button.click()
+                            time.sleep(3)
+                            print(f"🚀 Successfully applied to {job_title} at {company}")
+                            applied_jobs.append({"Company": company, "Job Title": job_title, "Job Link": job_link})
+                        except:
+                            print(f"⚠ Could not apply to {job_title} at {company}")
+                    except Exception as e:
+                        print(f"⚠ Error extracting job details: {e}")
+            except Exception as e:
+                print(f"Error searching jobs: {e}")
     return applied_jobs
 
-# Save applied jobs to CSV
 def save_jobs_to_csv():
-    applied_jobs = apply_to_jobs()
-    if not applied_jobs:
-        print("⚠ No jobs were applied to. Ensure job listings are being extracted correctly.")
+    applied_jobs = search_and_apply_jobs()
     df = pd.DataFrame(applied_jobs)
     df.to_csv("applied_jobs.csv", index=False)
     print(f"✅ Job applications saved to applied_jobs.csv ({len(applied_jobs)} jobs applied).")
 
 # Run the bot
+login_to_dice()
 save_jobs_to_csv()
 
 driver.quit()
